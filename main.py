@@ -10,9 +10,9 @@ SCREEN = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 GROUND_Y = int(SCREEN_HEIGHT * 0.8)
 GAME_SPRITES = {}
 GAME_SOUNDS = {}
-PLAYER = 'gallery/sprites/bird.png'
-BACKGROUND = 'gallery/sprites/bg.png'
-PIPE = 'gallery/sprites/pipe.png'
+PLAYER = ('gallery/sprites/bird.png', 'gallery/sprites/redbird.png')
+BACKGROUNDS = ('gallery/sprites/bg.png', 'gallery/sprites/bg-night.png')
+PIPES = ('gallery/sprites/pipe.png', 'gallery/sprites/pipe-red.png')
 
 
 def welcomeScreen():
@@ -20,7 +20,8 @@ def welcomeScreen():
     Shows welcome images on the screen
     """
     playerX = int(SCREEN_WIDTH/5)
-    playerY = int((SCREEN_HEIGHT - GAME_SPRITES['player'].get_height())/2)
+    playerY = int(
+        (SCREEN_HEIGHT - GAME_SPRITES['player-yellow'].get_height())/2)
     # messageX = int(SCREEN_WIDTH - GAME_SPRITES['message'].get_width())/2
     messageY = int(SCREEN_HEIGHT * 0.13)
     # Base Cordinates
@@ -36,10 +37,11 @@ def welcomeScreen():
             elif event.type == KEYDOWN and (event.key == K_SPACE or event.key == K_UP):
                 return
             else:
-                SCREEN.blit(GAME_SPRITES['background'], (0, 0))
-                # SCREEN.blit(GAME_SPRITES['message'], (baseX, GROUND_Y))
+                SCREEN.blit(GAME_SPRITES['background-day'], (0, 0))
+                SCREEN.blit(GAME_SPRITES['message'], (SCREEN_WIDTH - SCREEN_WIDTH*0.8,
+                                                      SCREEN_HEIGHT-SCREEN_HEIGHT*0.9))
                 SCREEN.blit(GAME_SPRITES['base'], (baseX, GROUND_Y))
-                SCREEN.blit(GAME_SPRITES['player'], (playerX, playerY))
+                SCREEN.blit(GAME_SPRITES['player-yellow'], (playerX, playerY))
                 pygame.display.update()
                 FPSCLOCK.tick(FPS)
 
@@ -85,6 +87,8 @@ def mainGame():
 
     playerFlapAccv = -8  # Velocity while flapping
     playerFlapped = False  # True only when the bird is flapping
+    isDay = False
+    previousScore = -1
 
     while True:
         for event in pygame.event.get():
@@ -95,20 +99,21 @@ def mainGame():
                 if playerY > 0:
                     playerVelY = playerFlapAccv
                     playerFlapped = True
-                    # GAME_SOUNDS['wing'].play()
+                    GAME_SOUNDS['wing'].play()
 
         crashTest = isCollide(playerX, playerY, upperPipes, lowerPipes)
         if crashTest:
-            return
+            return gameOver(isDay)
 
         # Check for score
-        playerMidPos = playerX + GAME_SPRITES['player'].get_width()/2
+        playerMidPos = playerX + GAME_SPRITES['player-yellow'].get_width()/2
         for pipe in upperPipes:
-            pipeMidPos = pipe['x'] + GAME_SPRITES['pipe'][0].get_width()/2
+            pipeMidPos = pipe['x'] + \
+                GAME_SPRITES['pipe-green'][0].get_width()/2
             if pipeMidPos <= playerMidPos < pipeMidPos + 4:
                 score += 1
                 print(f'Your Score is {score}')
-                # GAME_SOUNDS['point'].play()
+                GAME_SOUNDS['point'].play()
 
         if playerVelY < playerMaxVelY and not playerFlapped:
             """
@@ -125,7 +130,7 @@ def mainGame():
             """
             playerFlapped = False
 
-        playerHeight = GAME_SPRITES['player'].get_height()
+        playerHeight = GAME_SPRITES['player-yellow'].get_height()
         # This is for bird not to go under the ground
         playerY = playerY + min(playerVelY, GROUND_Y - playerY - playerHeight)
 
@@ -141,23 +146,31 @@ def mainGame():
             lowerPipes.append(newPipe[1])
 
         # If the pipes is out of the screen, remove it
-        if upperPipes[0]['x'] < -GAME_SPRITES['pipe'][0].get_width():
+        if upperPipes[0]['x'] < -GAME_SPRITES['pipe-green'][0].get_width():
             upperPipes.pop(0)
             lowerPipes.pop(0)
 
         # Blitting all the sprites
-        SCREEN.blit(GAME_SPRITES['background'], (0, 0))
+        if score % 10 == 0 and score != previousScore:
+            isDay = not isDay
+        previousScore = score
+
+        SCREEN.blit(GAME_SPRITES['background-day']
+                    if isDay
+                    else GAME_SPRITES['background-night'], (0, 0))
+
         for upperpipe, lowerpipe in zip(upperPipes, lowerPipes):
-            SCREEN.blit(GAME_SPRITES['pipe'][0],
+            SCREEN.blit(GAME_SPRITES['pipe-green'][0] if isDay else GAME_SPRITES['pipe-red'][0],
                         (int(upperpipe['x']), int(upperpipe['y'])))
-            SCREEN.blit(GAME_SPRITES['pipe'][1],
+            SCREEN.blit(GAME_SPRITES['pipe-green'][1] if isDay else GAME_SPRITES['pipe-red'][1],
                         (int(lowerpipe['x']), int(lowerpipe['y'])))
 
         SCREEN.blit(GAME_SPRITES['base'], (baseX, GROUND_Y))
-        SCREEN.blit(GAME_SPRITES['player'], (playerX, playerY))
+
+        SCREEN.blit(GAME_SPRITES['player-yellow']
+                    if isDay else GAME_SPRITES['player-red'], (playerX, playerY))
 
         # Displaying digits
-        '''
         myDigits = [int(x) for x in list(str(score))]
         width = 0
         for digit in myDigits:
@@ -167,7 +180,6 @@ def mainGame():
             SCREEN.blit(GAME_SPRITES['numbers'][digit],
                         (xOffset, SCREEN_HEIGHT*0.12))
             xOffset += GAME_SPRITES['numbers'][digit].get_width()
-        '''
         pygame.display.update()
         FPSCLOCK.tick(FPS)
 
@@ -178,14 +190,14 @@ def isCollide(playerX, playerY, upperPipes, lowerPipes):
         # GAME_SPRITES['hit'].play()
         return True
     for pipe in upperPipes:
-        pipeHeight = GAME_SPRITES['pipe'][0].get_height()
-        if (playerY < pipeHeight + pipe['y'] and abs(playerX - pipe['x']) < GAME_SPRITES['pipe'][0].get_width()):
-            # GAME_SOUNDS['hit'].play()
+        pipeHeight = GAME_SPRITES['pipe-green'][0].get_height()
+        if (playerY < pipeHeight + pipe['y'] and abs(playerX - pipe['x']) < GAME_SPRITES['pipe-green'][0].get_width()):
+            GAME_SOUNDS['hit'].play()
             return True
     for pipe in lowerPipes:
-        playerHeight = GAME_SPRITES['player'].get_height()
-        if (playerY + playerHeight > pipe['y']) and abs(playerX - pipe['x']) < GAME_SPRITES['pipe'][0].get_width():
-            # GAME_SOUNDS['hit'].play()
+        playerHeight = GAME_SPRITES['player-yellow'].get_height()
+        if (playerY + playerHeight > pipe['y']) and abs(playerX - pipe['x']) < GAME_SPRITES['pipe-green'][0].get_width():
+            GAME_SOUNDS['hit'].play()
             return True
     return False
 
@@ -194,7 +206,7 @@ def getRandomPipe():
     """
     generate positions of two pipes(one bottom and top) for blitting on the screen
     """
-    pipeHeight = GAME_SPRITES['pipe'][0].get_height()
+    pipeHeight = GAME_SPRITES['pipe-green'][0].get_height()
     offset = SCREEN_HEIGHT/3
     y2 = offset + random.randrange(0, int(SCREEN_HEIGHT -
                                           GAME_SPRITES['base'].get_height() - 1.2*offset))
@@ -208,6 +220,26 @@ def getRandomPipe():
     return pipe
 
 
+def gameOver(isDay):
+    """
+    This will display game over screen
+    """
+    background = GAME_SPRITES['background-day'] if isDay else GAME_SPRITES['background-night']
+    while True:
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == KEYDOWN:
+                return
+        SCREEN.blit(background, (0, 0))
+        SCREEN.blit(GAME_SPRITES['game-over'],
+                    ((SCREEN_WIDTH-GAME_SPRITES['game-over'].get_width())/2, SCREEN_HEIGHT/2))
+        SCREEN.blit(GAME_SPRITES['base'], (0, GROUND_Y))
+        pygame.display.update()
+        FPSCLOCK.tick(FPS)
+
+
 if __name__ == '__main__':
     pygame.init()
     FPSCLOCK = pygame.time.Clock()
@@ -216,11 +248,11 @@ if __name__ == '__main__':
     # Numbers Images
     GAME_SPRITES['numbers'] = (
         pygame.image.load('gallery/sprites/0.png').convert_alpha(),
-        pygame.image.load('gallery/sprites/1.jpg').convert_alpha(),
-        pygame.image.load('gallery/sprites/2.jpg').convert_alpha(),
+        pygame.image.load('gallery/sprites/1.png').convert_alpha(),
+        pygame.image.load('gallery/sprites/2.png').convert_alpha(),
         pygame.image.load('gallery/sprites/3.png').convert_alpha(),
-        pygame.image.load('gallery/sprites/4.jpg').convert_alpha(),
-        pygame.image.load('gallery/sprites/5.jpeg').convert_alpha(),
+        pygame.image.load('gallery/sprites/4.png').convert_alpha(),
+        pygame.image.load('gallery/sprites/5.png').convert_alpha(),
         pygame.image.load('gallery/sprites/6.png').convert_alpha(),
         pygame.image.load('gallery/sprites/7.png').convert_alpha(),
         pygame.image.load('gallery/sprites/8.png').convert_alpha(),
@@ -228,25 +260,45 @@ if __name__ == '__main__':
     )
 
     # Message Image
-    # GAME_SPRITES['message'] = pygame.image.load(
-    #     'gallery/sprites/message.png').convert_aplha()
+    GAME_SPRITES['message'] = pygame.image.load(
+        'gallery/sprites/message.png').convert_alpha()
 
     # Base Image
     GAME_SPRITES['base'] = pygame.image.load('gallery/sprites/base.png')
 
     # Pipe Images
-    GAME_SPRITES['pipe'] = (
-        pygame.transform.rotate(pygame.image.load(PIPE).convert_alpha(), 180),
-        pygame.image.load(PIPE).convert_alpha()
+    GAME_SPRITES['pipe-green'] = (
+        pygame.transform.rotate(pygame.image.load(
+            PIPES[0]).convert_alpha(), 180),
+        pygame.image.load(PIPES[0]).convert_alpha()
+    )
+    GAME_SPRITES['pipe-red'] = (
+        pygame.transform.rotate(pygame.image.load(
+            PIPES[1]).convert_alpha(), 180),
+        pygame.image.load(PIPES[1]).convert_alpha()
     )
 
     # Game Sounds
+    GAME_SOUNDS['die'] = pygame.mixer.Sound('gallery/audio/die.wav')
+    GAME_SOUNDS['hit'] = pygame.mixer.Sound('gallery/audio/hit.wav')
+    GAME_SOUNDS['point'] = pygame.mixer.Sound('gallery/audio/point.wav')
+    GAME_SOUNDS['swoosh'] = pygame.mixer.Sound('gallery/audio/swoosh.wav')
+    GAME_SOUNDS['wing'] = pygame.mixer.Sound('gallery/audio/wing.wav')
 
     # Background Image
-    GAME_SPRITES['background'] = pygame.image.load(BACKGROUND).convert()
+    GAME_SPRITES['background-day'] = pygame.image.load(
+        BACKGROUNDS[0]).convert()
+    GAME_SPRITES['background-night'] = pygame.image.load(
+        BACKGROUNDS[1]).convert()
 
     # Bird Image
-    GAME_SPRITES['player'] = pygame.image.load(PLAYER).convert_alpha()
+    GAME_SPRITES['player-yellow'] = pygame.image.load(
+        PLAYER[0]).convert_alpha()
+    GAME_SPRITES['player-red'] = pygame.image.load(PLAYER[1]).convert_alpha()
+
+    # Game over Image
+    GAME_SPRITES['game-over'] = pygame.image.load(
+        'gallery/sprites/gameover.png')
 
     while True:
         welcomeScreen()
