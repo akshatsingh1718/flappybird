@@ -38,8 +38,8 @@ def welcomeScreen():
                 return
             else:
                 SCREEN.blit(GAME_SPRITES['background-day'], (0, 0))
-                SCREEN.blit(GAME_SPRITES['message'], (SCREEN_WIDTH - SCREEN_WIDTH*0.8,
-                                                      SCREEN_HEIGHT-SCREEN_HEIGHT*0.9))
+                SCREEN.blit(GAME_SPRITES['message'], (int(SCREEN_WIDTH - SCREEN_WIDTH*0.8),
+                                                      int(SCREEN_HEIGHT-SCREEN_HEIGHT*0.9)))
                 SCREEN.blit(GAME_SPRITES['base'], (baseX, GROUND_Y))
                 SCREEN.blit(GAME_SPRITES['player-yellow'], (playerX, playerY))
                 pygame.display.update()
@@ -178,7 +178,7 @@ def mainGame():
         xOffset = (SCREEN_WIDTH - width)/2
         for digit in myDigits:
             SCREEN.blit(GAME_SPRITES['numbers'][digit],
-                        (xOffset, SCREEN_HEIGHT*0.12))
+                        (int(xOffset), int(SCREEN_HEIGHT*0.12)))
             xOffset += GAME_SPRITES['numbers'][digit].get_width()
         pygame.display.update()
         FPSCLOCK.tick(FPS)
@@ -233,9 +233,9 @@ def gameOver(isDay):
             elif event.type == KEYDOWN:
                 return
         SCREEN.blit(background, (0, 0))
-        SCREEN.blit(GAME_SPRITES['game-over'],
-                    ((SCREEN_WIDTH-GAME_SPRITES['game-over'].get_width())/2, SCREEN_HEIGHT/2))
-        SCREEN.blit(GAME_SPRITES['base'], (0, GROUND_Y))
+        SCREEN.blit(GAME_SPRITES['game-over'], (int(SCREEN_WIDTH -
+                                                    GAME_SPRITES['game-over'].get_width()/2), int(SCREEN_HEIGHT/2)))
+        SCREEN.blit(GAME_SPRITES['base'], (0, int(GROUND_Y)))
         pygame.display.update()
         FPSCLOCK.tick(FPS)
 
